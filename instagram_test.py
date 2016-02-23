@@ -1,0 +1,8 @@
+import cnfg
+from instagram.client import InstagramAPI
+
+config = cnfg.load(".instagram_config")
+api = InstagramAPI(client_id=config['CLIENT_ID'], client_secret=config['CLIENT_SECRET'])
+
+basics = api.user('22973081')
+print basics.id
