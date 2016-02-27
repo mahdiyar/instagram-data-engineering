@@ -32,12 +32,18 @@ def get_user_basics(user_id):
 
 
 
-# try:
-# 	latitude = media.location.point.latitude
-# 	longitude = media.location.point.longitude
-# 	caption = media.caption.text
-# except:
-# 	pass
+def get_user_media(user_id):
+
+	media_list, next = api.user_recent_media(user_id = user_id)
+
+	media_data = {}
+	for media in media_list:
+		media_data[media.id] = {'likes_count' : media.like_count,
+								'comments_count' : media.comment_count,
+								'latitude' : get_latitude(media),
+								'longitude' : get_longitude(media),
+								'caption' : get_caption_text(media)}
+	return media_data
 
 ##### Helper functions ######
 def get_latitude(media_object):
@@ -63,21 +69,6 @@ def get_caption_text(media_object):
 		return media_object.caption.text
 	except AttributeError:
 		return None
-
-def get_user_media(user_id):
-
-	media_list, next = api.user_recent_media(user_id = user_id)
-
-	media_data = {}
-	for media in media_list:
-		media_data[media.id] = {'likes_count' : media.like_count,
-								'comments_count' : media.comment_count,
-								'latitude' : get_latitude(media),
-								'longitude' : get_longitude(media),
-								'caption' : get_caption_text(media)}
-	return media_data
-
-
 
 
 
