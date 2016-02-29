@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, Text
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, Text, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
@@ -42,6 +42,9 @@ class Follower(Base):
 	id = Column(Integer, primary_key=True)
 	user_id = Column(String(80), ForeignKey('user.user_id'), nullable=False)
 	follower_id = Column(String(80), ForeignKey('user.user_id'), nullable=False)
+
+	__table_args__ = (UniqueConstraint('user_id', 'follower_id', 
+						name='_following_uc'),)
 
 	## Relationships
 	instagram_user = relationship('User')
