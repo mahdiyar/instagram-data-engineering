@@ -17,7 +17,8 @@ def get_user_id(username):
 
 def get_user_basics(user_id):
 	''' Returns a dictionary with instagram user data
-		stored for a given user_id'''
+		stored for a given user_id. If the user's account
+		is private this will return None.'''
 
 	try:
 		user = api.user(user_id = user_id)
@@ -35,6 +36,11 @@ def get_user_basics(user_id):
 		return None
 
 def get_user_media(user_id):
+	''' Given an instagram user id, this will pull the recent media
+		(last 10) that the user has posted from the api and return this 
+		data in a dictionary with media id as the key. If the user's account
+		is private this will return None.
+	'''
 
 	try:
 		media_list, next = api.user_recent_media(user_id = user_id)
@@ -53,6 +59,9 @@ def get_user_media(user_id):
 		return None
 
 def get_user_followers(user_id):
+	''' Given an instagram user_id this will grab all of
+		a user's followers and return them as a list. It will
+		return None if the user is private.'''
 
 	try:
 		user_follower_list = []
@@ -105,4 +114,4 @@ def get_caption_text(media_object):
 key_username = 'eglum'
 key_id = get_user_id(key_username)
 
-test_followers = get_user_followers(key_id)
+# test_followers = get_user_followers(key_id)
