@@ -26,7 +26,7 @@ class Media(Base):
 	__tablename__ = 'media'
 
 	id = Column(Integer, primary_key=True)
-	user_id = Column(String(80), ForeignKey('user.user_id'), nullable=False, unique=True)
+	user_id = Column(String(80), ForeignKey('user.user_id'), nullable=False)
 	media_id = Column(String(280), nullable = False, unique=True)
 	num_likes = Column(Integer)
 	num_comments = Column(Integer)
