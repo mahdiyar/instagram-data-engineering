@@ -1,11 +1,22 @@
 import cnfg
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from instagram.client import InstagramAPI
 from instagram.bind import InstagramAPIError
 
+from db_setup import Base, User, Media, Follower
+
+# Configuring the database connection.
+engine = create_engine('sqlite:///instagram.sqlite')
+Base.metadata.bind = engine
+DBSession = sessionmaker(bind = engine)
+session = DBSession()
+
+# Configuring the instagram api client.
 config = cnfg.load(".instagram_config")
 api = InstagramAPI(client_id=config['CLIENT_ID'], 
 				   client_secret=config['CLIENT_SECRET'])
-
 
 
 def get_user_id(username):
@@ -78,6 +89,15 @@ def get_user_followers(user_id):
 		print 'This user is private'
 		return None
 
+##### Functions to store new information in the database. #####
+
+def store_followers(user_id,user_follower_list):
+
+	for user_id in user_follower_list:
+		new_follower = Follower(user_id=user_id,follower_id=user_id)
+		commit(new_follower)
+
+
 
 
 ##### Helper functions ######
@@ -105,6 +125,17 @@ def get_caption_text(media_object):
 	except AttributeError:
 		return None
 
+def commit(new_object):
+	'''Commiting new object to the database.'''
+	try:
+		session.add(new_object)
+		session.commit()
+		print "succesfully added object!"
+	except:
+		print "IntegrityError"
+		session.rollback()
+		# session.close()
+
 
 
 ##### Get an instagram user's list of follwers
@@ -113,5 +144,5 @@ def get_caption_text(media_object):
 
 key_username = 'eglum'
 key_id = get_user_id(key_username)
-
-# test_followers = get_user_followers(key_id)
+followers = get_user_followers(key_id)
+store_followers(key_id,followers)
