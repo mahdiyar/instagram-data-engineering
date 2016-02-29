@@ -34,14 +34,14 @@ def get_user_basics(user_id):
 	try:
 		user = api.user(user_id = user_id)
 		# Extract data and store in dict
-		basics = {'user_id' : user_id}
-		basics['username'] = user.username
-		basics['bio'] = user.bio
-		basics['followers_count']= user.counts['followed_by']
-		basics['follows_count'] = user.counts['follows']
-		basics['media_count'] = user.counts['media']
+		user_basics = {'user_id' : user_id}
+		user_basics['username'] = user.username
+		user_basics['bio'] = user.bio
+		user_basics['num_followers']= user.counts['followed_by']
+		user_basics['num_following'] = user.counts['follows']
+		user_basics['num_posts'] = user.counts['media']
 
-		return basics
+		return user_basics
 	except InstagramAPIError:
 		print 'This user is private'
 		return None
@@ -91,7 +91,25 @@ def get_user_followers(user_id):
 
 ##### Functions to store new information in the database. #####
 
+def store_user(user_basics):
+	'''Stores a user's basic information dict in the database.'''
+
+	new_user = User(user_id=user_basics['user_id'],
+					username=user_basics['user_id'],
+					bio=user_basics['bio'],
+					num_followers=user_basics['num_followers'],
+					num_following=user_basics['num_following'],
+					num_posts=user_basics['num_posts'])
+	commit_to_db(new_user)
+
+def store_media():
+	'''Stores a user's media dict in the database.'''
+
+	pass
+
 def store_followers(user_id,user_follower_list):
+	''' A function that stores the user-follower relationship
+		as a directed pair in the database.'''
 
 	for user_id in user_follower_list:
 		new_follower = Follower(user_id=user_id,follower_id=user_id)
@@ -103,7 +121,6 @@ def store_followers(user_id,user_follower_list):
 ##### Helper functions ######
 def get_latitude(media_object):
 	'''Exception handling for getting latitude.'''
-
 	try:
 		return media_object.location.point.latitude
 	except AttributeError:
@@ -111,15 +128,14 @@ def get_latitude(media_object):
 
 def get_longitude(media_object):
 	'''Exception handling for getting longitude.'''
-	
 	try:
+
 		return media_object.location.point.longitude
 	except AttributeError:
 		return None
 
 def get_caption_text(media_object):
 	'''Exception handling for getting caption.'''
-
 	try:
 		return media_object.caption.text
 	except AttributeError:
@@ -144,5 +160,8 @@ def commit_to_db(new_object):
 
 key_username = 'eglum'
 key_id = get_user_id(key_username)
-followers = get_user_followers(key_id)
-store_followers(key_id,followers)
+# m = get_user_media(key_id)
+b = get_user_basics(key_id)
+store_user(b)
+# followers = get_user_followers(key_id)
+# store_followers(key_id,followers)
