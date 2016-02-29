@@ -19,7 +19,8 @@ class User(Base):
 	longitude = Column(String(80))
 
 	## Relationships
-	user = relationship('User')
+	follower = relationship('Follower', backref="user")
+	media = relationship('Media', backref="user")
 
 class Media(Base):
 	__tablename__ = 'media'
@@ -33,21 +34,15 @@ class Media(Base):
 	longitude = Column(String(80))
 	caption = Column(Text, default='')
 
-	## Relationships
-	instagram_user = relationship('User')
-
 class Follower(Base):
 	__tablename__ = 'follower'
 
 	id = Column(Integer, primary_key=True)
-	user_id = Column(String(80), ForeignKey('user.user_id'), nullable=False)
-	follower_id = Column(String(80), ForeignKey('user.user_id'), nullable=False)
+	user_id = Column(String(80),ForeignKey('user.user_id'),nullable=False)
+	follower_id = Column(String(80),nullable=False)
 
 	__table_args__ = (UniqueConstraint('user_id', 'follower_id', 
 						name='_following_uc'),)
-
-	## Relationships
-	instagram_user = relationship('User')
 
 
 engine = create_engine('sqlite:///instagram.sqlite')
