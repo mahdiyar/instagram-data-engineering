@@ -48,22 +48,24 @@ def get_user_basics(user_id):
 
 def get_user_media(user_id):
 	''' Given an instagram user id, this will pull the recent media
-		(last 10) that the user has posted from the api and return this 
-		data in a dictionary with media id as the key. If the user's account
+		(last 20) that the user has posted from the api and return this 
+		data list of dictionaries with media content. If the user's account
 		is private this will return None.
 	'''
 
 	try:
 		media_list, next = api.user_recent_media(user_id = user_id)
 
-		media_data = {}
+		user_media_list = []
 		for media in media_list:
-			media_data[media.id] = {'likes_count' : media.like_count,
-									'comments_count' : media.comment_count,
-									'latitude' : get_latitude(media),
-									'longitude' : get_longitude(media),
-									'caption' : get_caption_text(media)}
-		return media_data
+			user_media = {'media_id' : media.id,
+						  'num_likes' : media.like_count,
+						  'num_comments' : media.comment_count,
+						  'caption' : get_caption_text(media),
+						  'latitude' : get_latitude(media),
+						  'longitude' : get_longitude(media)}
+			user_media_list.append(user_media)
+		return user_media_list
 
 	except InstagramAPIError:
 		print 'This user is private'
@@ -91,10 +93,10 @@ def get_user_followers(user_id):
 
 ##### Functions to store new information in the database. #####
 
-def store_user(user_basics):
+def store_user(user_id,user_basics):
 	'''Stores a user's basic information dict in the database.'''
 
-	new_user = User(user_id=user_basics['user_id'],
+	new_user = User(user_id=user_id,
 					username=user_basics['user_id'],
 					bio=user_basics['bio'],
 					num_followers=user_basics['num_followers'],
@@ -102,10 +104,18 @@ def store_user(user_basics):
 					num_posts=user_basics['num_posts'])
 	commit_to_db(new_user)
 
-def store_media():
+def store_media(user_id,user_media_list):
 	'''Stores a user's media dict in the database.'''
 
-	pass
+	for media in user_media_list:
+		new_media = Media(user_id=user_id,
+						  media_id=media['media_id'],
+						  num_likes=media['num_likes'],
+						  num_comments=media['num_comments'],
+						  caption=media['caption'],
+						  latitude=media['latitude'],
+						  longitude=media['longitude'])
+		commit_to_db(new_media)
 
 def store_followers(user_id,user_follower_list):
 	''' A function that stores the user-follower relationship
@@ -160,8 +170,9 @@ def commit_to_db(new_object):
 
 key_username = 'eglum'
 key_id = get_user_id(key_username)
-# m = get_user_media(key_id)
-b = get_user_basics(key_id)
-store_user(b)
-# followers = get_user_followers(key_id)
-# store_followers(key_id,followers)
+m = get_user_media(key_id)
+u = get_user_basics(key_id)
+f = get_user_followers(key_id)
+store_user(key_id,u)
+store_media(key_id,m)
+store_followers(key_id,f)
