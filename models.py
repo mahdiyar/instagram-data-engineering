@@ -95,7 +95,7 @@ def store_followers(user_id,user_follower_list):
 
 	for user_id in user_follower_list:
 		new_follower = Follower(user_id=user_id,follower_id=user_id)
-		commit(new_follower)
+		commit_to_db(new_follower)
 
 
 
@@ -125,7 +125,7 @@ def get_caption_text(media_object):
 	except AttributeError:
 		return None
 
-def commit(new_object):
+def commit_to_db(new_object):
 	'''Commiting new object to the database.'''
 	try:
 		session.add(new_object)
