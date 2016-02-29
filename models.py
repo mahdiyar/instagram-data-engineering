@@ -52,6 +52,24 @@ def get_user_media(user_id):
 		print 'This user is private'
 		return None
 
+def get_user_followers(user_id):
+
+	try:
+		user_follower_list = []
+		followers, next = api.user_followed_by(user_id=user_id)
+		for follower in followers:
+			user_follower_list.append(follower.id)
+		while next:
+			followers, next = api.user_followed_by(with_next_url=next)
+			for follower in followers:
+				user_follower_list.append(follower.id)
+		return user_follower_list
+
+	except InstagramAPIError:
+		print 'This user is private'
+		return None
+
+
 
 ##### Helper functions ######
 def get_latitude(media_object):
@@ -81,11 +99,10 @@ def get_caption_text(media_object):
 
 
 ##### Get an instagram user's list of follwers
-# followers, next = api.user_followed_by(user_id= user_id)
 
 
-key_username = 'emilyhk613'
+
+key_username = 'eglum'
 key_id = get_user_id(key_username)
-print get_user_media(key_id)
 
-
+test_followers = get_user_followers(key_id)
