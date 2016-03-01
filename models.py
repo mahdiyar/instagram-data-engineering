@@ -1,3 +1,4 @@
+import math
 import cnfg
 
 from sqlalchemy import create_engine
@@ -19,9 +20,6 @@ api = InstagramAPI(client_id=config['CLIENT_ID'],
 				   client_secret=config['CLIENT_SECRET'])
 
 
-
-# Getting the remain api calls: api.x_ratelimit_remaining
-
 def get_user_id(username):
 	''' Given a username, return the instagram user_id.
 		Only returns exact match. '''
@@ -34,19 +32,23 @@ class AddFullUserData():
 		recent media, and entire list of followers and stores all of this 
 		information in the database.'''
 
-	def __init__(self,user_id):
+	def __init__(self,user_id,max_followers=10000):
 		self._user_id = user_id
+		self._max_followers = float(max_followers)
 		# Grab and store a user's basic profile data.
 		basics, remaining_calls = self._get_user_basics()
-		print remaining_calls
 		self._store_user(basics)
+		# Compute an estimate of how many api calls are needed to get data.
+		follower_count = float(basics['num_followers'])
+		calls_needed = 3+min(int(math.ceil(follower_count/50)),
+							 int(math.ceil(self._max_followers/50)))
 		# Grab and store a user's recent media data.
-		media, remaining_calls = self._get_user_media()
+		media, _ = self._get_user_media()
 		self._store_media(media)
 		# Grab and store a user's list of followers.
-		followers, remaining_calls = self._get_user_followers()
-		print remaining_calls
+		followers, _ = self._get_user_followers()
 		self._store_followers(followers)
+		print remaining_calls, calls_needed
 
 	def _get_user_basics(self):
 		''' Returns a tuple including a dictionary with instagram user data
@@ -107,11 +109,14 @@ class AddFullUserData():
 			remaining_calls = int(api.x_ratelimit_remaining)
 			for follower in followers:
 				user_follower_list.append(follower.id)
-			while next:
+			while next and len(user_follower_list) < self._max_followers:
 				followers, next = api.user_followed_by(with_next_url=next)
 				remaining_calls = int(api.x_ratelimit_remaining)
 				for follower in followers:
 					user_follower_list.append(follower.id)
+					print len(user_follower_list)
+
+			print len(user_follower_list)
 			return user_follower_list, remaining_calls
 
 		except InstagramAPIError:
