@@ -20,13 +20,14 @@ api = InstagramAPI(client_id=config['CLIENT_ID'],
 
 
 
+# Getting the remain api calls: api.x_ratelimit_remaining
+
 def get_user_id(username):
 	''' Given a username, return the instagram user_id.
 		Only returns exact match. '''
 
 	user_search = api.user_search(q=username)
 	return user_search[0].id
-
 
 class AddFullUserData():
 	'''This class takes a user_id and grabs the users profile information,
@@ -36,23 +37,26 @@ class AddFullUserData():
 	def __init__(self,user_id):
 		self._user_id = user_id
 		# Grab and store a user's basic profile data.
-		basics = self._get_user_basics()
+		basics, remaining_calls = self._get_user_basics()
+		print remaining_calls
 		self._store_user(basics)
 		# Grab and store a user's recent media data.
-		media = self._get_user_media()
+		media, remaining_calls = self._get_user_media()
 		self._store_media(media)
 		# Grab and store a user's list of followers.
-		followers = self._get_user_followers()
+		followers, remaining_calls = self._get_user_followers()
+		print remaining_calls
 		self._store_followers(followers)
 
-
 	def _get_user_basics(self):
-		''' Returns a dictionary with instagram user data
-			stored for a given user_id. If the user's account
-			is private this will return None.'''
+		''' Returns a tuple including a dictionary with instagram user data
+			stored for a given user_id and the remaining amount of calls
+			available to make on the api. If the user's account
+			is private this will return (None, None).'''
 
 		try:
 			user = api.user(user_id = self._user_id)
+			remaining_calls = int(api.x_ratelimit_remaining)
 			# Extract data and store in dict
 			user_basics = {'user_id' : user.id}
 			user_basics['username'] = user.username
@@ -61,21 +65,21 @@ class AddFullUserData():
 			user_basics['num_following'] = user.counts['follows']
 			user_basics['num_posts'] = user.counts['media']
 
-			return user_basics
+			return user_basics, remaining_calls
 		except InstagramAPIError:
 			print 'This user is private'
-			return None
+			return None, None
 
 	def _get_user_media(self):
-		''' Given an instagram user id, this will pull the recent media
-			(last 20) that the user has posted from the api and return this 
-			data list of dictionaries with media content. If the user's account
-			is private this will return None.
+		''' Given an instagram user id, this return a tuple including a list 
+			of dictionaries containing data on the user's recent media and 
+			the amount of remaining calls available to make on the api. If 
+			the user's account is private this will return (None, None).
 		'''
 
 		try:
 			media_list, next = api.user_recent_media(user_id = self._user_id)
-
+			remaining_calls = int(api.x_ratelimit_remaining)
 			user_media_list = []
 			for media in media_list:
 				user_media = {'media_id' : media.id,
@@ -85,31 +89,34 @@ class AddFullUserData():
 							  'latitude' : self._get_latitude(media),
 							  'longitude' : self._get_longitude(media)}
 				user_media_list.append(user_media)
-			return user_media_list
+			return user_media_list, remaining_calls
 
 		except InstagramAPIError:
 			print 'This user is private'
-			return None
+			return None, None
 
 	def _get_user_followers(self):
-		''' Given an instagram user_id this will grab all of
-			a user's followers and return them as a list. It will
-			return None if the user is private.'''
+		''' Given an instagram user_id this will return a tuple containing
+			a list of the user's followers and the amount of remaining calls
+			available to make on the api. If the user is private it will
+			return (None, None).'''
 
 		try:
 			user_follower_list = []
 			followers, next = api.user_followed_by(user_id=self._user_id)
+			remaining_calls = int(api.x_ratelimit_remaining)
 			for follower in followers:
 				user_follower_list.append(follower.id)
 			while next:
 				followers, next = api.user_followed_by(with_next_url=next)
+				remaining_calls = int(api.x_ratelimit_remaining)
 				for follower in followers:
 					user_follower_list.append(follower.id)
-			return user_follower_list
+			return user_follower_list, remaining_calls
 
 		except InstagramAPIError:
 			print 'This user is private'
-			return None
+			return None, None
 
 	##### Functions to store new information in the database. #####
 
@@ -147,8 +154,6 @@ class AddFullUserData():
 			for follower_id in user_follower_list:
 				new_follower = Follower(user_id=self._user_id,follower_id=follower_id)
 				self._commit_to_db(new_follower)
-
-
 
 
 	##### Helper functions ######
