@@ -9,4 +9,5 @@ This project is an investigation into understanding your following on instagram.
 > ``` 
 virtualenv my-venv
 source my-venv/bin/activate
+pip install -r requirements.txt
 ```
