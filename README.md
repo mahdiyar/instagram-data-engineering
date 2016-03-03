@@ -3,5 +3,8 @@
 ### 1. Configuration 
 
 - set up a virtual environment
-``` virtualenv my-venv
-	source my-venv/bin/activate```
+
+> ``` 
+virtualenv my-venv
+source my-venv/bin/activate
+```
