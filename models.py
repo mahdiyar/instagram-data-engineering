@@ -26,16 +26,16 @@ def get_user_id(username):
 		Only returns exact match. '''
 
 	user_search = api.user_search(q=username)
-	return user_search[0].id
+	return str(user_search[0].id)
 
-# def rate_limit_refresh():
-# 	''' Given a username, return the instagram user_id.
-# 		Only returns exact match. '''
+def rate_limit_check():
+	''' Given a username, return the instagram user_id.
+		Only returns exact match. '''
 
-# 	user_search = api.user_search(q='instagram')
-# 	remaining_calls = int(api.x_ratelimit_remaining)
+	user_search = api.user_search(q='instagram')
+	remaining_calls = int(api.x_ratelimit_remaining)
 
-# 	return user_search[0].id
+	return remaining_calls
 
 
 def commit_to_db(new_object):
@@ -59,7 +59,8 @@ class AddUserProfile():
 	def __init__(self,user_id):
 		self._user_id = user_id
 		# Grab and store a user's basic profile data.
-		basics, _ = self._get_user_basics()
+		basics, rate = self._get_user_basics()
+		print rate
 		self._store_user(basics)
 
 	def _get_user_basics(self):
@@ -89,7 +90,7 @@ class AddUserProfile():
 		
 		if user_basics:
 			new_user = User(user_id=self._user_id,
-							username=user_basics['user_id'],
+							username=user_basics['username'],
 							bio=user_basics['bio'],
 							num_followers=user_basics['num_followers'],
 							num_following=user_basics['num_following'],
