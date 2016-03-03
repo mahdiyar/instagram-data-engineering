@@ -1,5 +1,7 @@
 # instagram-follower-clusters
 
+This project is an investigation into understanding your following on instagram. 
+
 ### 1. Configuration 
 
 - set up a virtual environment
