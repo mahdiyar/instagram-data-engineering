@@ -1,3 +1,7 @@
 instagram.sqlite
 *.pyc
 .ipynb_checkpoints/
+.Python
+bin/
+include/
+lib/
