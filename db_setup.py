@@ -45,5 +45,5 @@ class Follower(Base):
 						name='_following_uc'),)
 
 
-engine = create_engine('sqlite:///instagram.sqlite')
+engine = create_engine('postgresql://localhost/metis_adsthetic')
 Base.metadata.create_all(engine)
