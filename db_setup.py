@@ -23,7 +23,7 @@ class InstagramUser(Base):
 	media = relationship('Media', backref="instagram_user")
 	influencer = relationship('Influencer', backref="instagram_user")
 	client = relationship('Client', backref="instagram_user")
-	target_audience = relationship('TargetAudeince', backref="instagram_user")
+	target_audience = relationship('TargetCustomer', backref="instagram_user")
 
 class Media(Base):
 	__tablename__ = 'media'
@@ -58,7 +58,7 @@ class Client(Base):
 	__tablename__='client'
 
 	id = Column(Integer,primary_key=True)
-	instagram_id = Column(String(80),nullable=True)
+	instagram_id = Column(String(80),ForeignKey('instagram_user.instagram_id'),nullable=True)
 
 	campaign = relationship('Campaign', backref="client")
 
