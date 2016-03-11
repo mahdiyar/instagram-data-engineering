@@ -7,10 +7,10 @@ from sqlalchemy.exc import IntegrityError
 from instagram.client import InstagramAPI
 from instagram.bind import InstagramAPIError
 
-from db_setup import Base, User, Media, Follower
+from db_setup import Base, InstagramUser, Media, Follower
 
 # Configuring the database connection.
-engine = create_engine('sqlite:///instagram.sqlite')
+engine = create_engine('postgresql://localhost/metis_adsthetic')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind = engine)
 session = DBSession()
@@ -51,59 +51,59 @@ def commit_to_db(new_object):
 		# session.close()
 
 
-
+######## Classes to pull user information from Instagram ########
 class AddUserProfile():
-	'''This class takes a user_id and grabs a user's profile information
+	'''This class takes a instagram_id and grabs a user's profile information
 	   stores it in the database.'''
 
-	def __init__(self,user_id):
-		self._user_id = user_id
+	def __init__(self,instagram_id):
+		self._instagram_id = instagram_id
 		# Grab and store a user's basic profile data.
-		basics, rate = self._get_user_basics()
+		basics, rate = self._get_user_profile()
 		print rate
 		self._store_user(basics)
 
-	def _get_user_basics(self):
+	def _get_user_profile(self):
 		''' Returns a tuple including a dictionary with instagram user data
 			stored for a given user_id and the remaining amount of calls
 			available to make on the api. If the user's account
 			is private this will return (None, None).'''
 
 		try:
-			user = api.user(user_id = self._user_id)
+			instagram_user = api.user(user_id = self._instagram_id)
 			remaining_calls = int(api.x_ratelimit_remaining)
 			# Extract data and store in dict
-			user_basics = {'user_id' : user.id}
-			user_basics['username'] = user.username
-			user_basics['bio'] = user.bio
-			user_basics['num_followers']= user.counts['followed_by']
-			user_basics['num_following'] = user.counts['follows']
-			user_basics['num_posts'] = user.counts['media']
+			instagram_user_profile = {'instagram_id' : self._instagram_id}
+			instagram_user_profile['instagram_username'] = instagram_user.instagram_username
+			instagram_user_profile['bio'] = instagram_user.bio
+			instagram_user_profile['num_followers']= instagram_user.counts['followed_by']
+			instagram_user_profile['num_following'] = instagram_user.counts['follows']
+			instagram_user_profile['num_posts'] = instagram_user.counts['media']
 
-			return user_basics, remaining_calls
+			return instagram_user_profile, remaining_calls
 		except InstagramAPIError:
 			print 'This user is private'
 			return None, None
 
-	def _store_user(self,user_basics):
+	def _store_user(self,instagram_user_profile):
 		'''Stores a user's basic information dict in the database.'''
 		
-		if user_basics:
-			new_user = User(user_id=self._user_id,
-							username=user_basics['username'],
-							bio=user_basics['bio'],
-							num_followers=user_basics['num_followers'],
-							num_following=user_basics['num_following'],
-							num_posts=user_basics['num_posts'])
+		if instagram_user_profile:
+			new_user = InstagramUser(instagram_id=self._user_id,
+							instagram_username=instagram_user_profile['username'],
+							bio=instagram_user_profile['bio'],
+							num_followers=instagram_user_profile['num_followers'],
+							num_following=instagram_user_profile['num_following'],
+							num_posts=instagram_user_profile['num_posts'])
 			commit_to_db(new_user)
 
 
 class AddUserMedia():
-	''' This class takes a user_id and grabs the user's recent media
+	''' This class takes an instagram_id and grabs the user's recent media
 		and stores all of this information in the database.'''
 
-	def __init__(self,user_id,max_media=10):
-		self._user_id = user_id
+	def __init__(self,instagram_id,max_media=10):
+		self._instagram_id = instagram_id
 		self._max_media = float(max_media)
 
 		# Grab and store a user's recent media data.
@@ -119,7 +119,7 @@ class AddUserMedia():
 		'''
 
 		try:
-			media_list, next = api.user_recent_media(user_id = self._user_id)
+			media_list, next = api.user_recent_media(user_id = self._instagram_id)
 			remaining_calls = int(api.x_ratelimit_remaining)
 			user_media_list = []
 			for media in media_list:
@@ -141,7 +141,7 @@ class AddUserMedia():
 
 		if user_media_list:
 			for media in user_media_list:
-				new_media = Media(user_id=self._user_id,
+				new_media = Media(instagram_id=self._instagram_id,
 								  media_id=media['media_id'],
 								  num_likes=media['num_likes'],
 								  num_comments=media['num_comments'],
@@ -174,32 +174,34 @@ class AddUserMedia():
 
 
 class AddUserFollowers():
-	'''This class takes a user_id and grabs the users follower data,
+	'''This class takes an instagram_id and grabs the users follower data,
 		and stores this information in the database.'''
 
-	def __init__(self,user_id,max_followers=10):
-		self._user_id = user_id
+	def __init__(self,instagram_id,max_followers=10000):
+		self._instagram_id = instagram_id
 		self._max_followers = float(max_followers)
 
 		# Grab and store a user's list of followers.
 		followers, remaining_calls = self._get_user_followers()
+		print remaining_calls
 		self._store_followers(followers)
 
 	def _get_user_followers(self):
-		''' Given an instagram user_id this will return a tuple containing
+		''' Given an instagram_id this will return a tuple containing
 			a list of the user's followers and the amount of remaining calls
 			available to make on the api. If the user is private it will
 			return (None, None).'''
 
 		try:
 			user_follower_list = []
-			followers, next = api.user_followed_by(user_id=self._user_id)
+			followers, next = api.user_followed_by(user_id=self._instagram_id)
 			remaining_calls = int(api.x_ratelimit_remaining)
 			for follower in followers:
 				user_follower_list.append(follower.id)
-			while next and len(user_follower_list) < self._max_followers:
+			while next:
 				followers, next = api.user_followed_by(with_next_url=next)
 				remaining_calls = int(api.x_ratelimit_remaining)
+				print remaining_calls
 				for follower in followers:
 					user_follower_list.append(follower.id)
 			return user_follower_list, remaining_calls
@@ -214,7 +216,7 @@ class AddUserFollowers():
 
 		if user_follower_list:
 			for follower_id in user_follower_list:
-				new_follower = Follower(user_id=self._user_id,follower_id=follower_id)
+				new_follower = Follower(instagram_id=self._instagram_id,follower_id=follower_id)
 				commit_to_db(new_follower)
 
 
