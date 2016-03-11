@@ -74,7 +74,7 @@ class AddUserProfile():
 			remaining_calls = int(api.x_ratelimit_remaining)
 			# Extract data and store in dict
 			instagram_user_profile = {'instagram_id' : self._instagram_id}
-			instagram_user_profile['instagram_username'] = instagram_user.instagram_username
+			instagram_user_profile['instagram_username'] = instagram_user.username
 			instagram_user_profile['bio'] = instagram_user.bio
 			instagram_user_profile['num_followers']= instagram_user.counts['followed_by']
 			instagram_user_profile['num_following'] = instagram_user.counts['follows']
@@ -89,8 +89,8 @@ class AddUserProfile():
 		'''Stores a user's basic information dict in the database.'''
 		
 		if instagram_user_profile:
-			new_user = InstagramUser(instagram_id=self._user_id,
-							instagram_username=instagram_user_profile['username'],
+			new_user = InstagramUser(instagram_id=self._instagram_id,
+							instagram_username=instagram_user_profile['instagram_username'],
 							bio=instagram_user_profile['bio'],
 							num_followers=instagram_user_profile['num_followers'],
 							num_following=instagram_user_profile['num_following'],
