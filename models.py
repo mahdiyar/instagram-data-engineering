@@ -230,7 +230,8 @@ class AddUserFollows():
 
 		# Grab and store the list of user follows.
 		follows, remaining_calls = self._get_user_follows()
-		self.store_follows(follows)
+		print remaining_calls
+		self._store_follows(follows)
 
 	def _get_user_follows(self):
 		""" Given an instagram_id, this will return a tuple containing 
@@ -239,13 +240,15 @@ class AddUserFollows():
 
 		try:
 			user_follows_list = []
-			follows, next = api.user_follows(user_id=user_id)
+			follows, next = api.user_follows(user_id=self._instagram_id)
 			remaining_calls = int(api.x_ratelimit_remaining)
+			print remaining_calls
 			for user in follows:
 				user_follows_list.append(user.id)
 			while next:
 				follows, next = api.user_follows(with_next_url=next)
-				remaining_calls = int(api.x_ratelimit_remaining)	
+				remaining_calls = int(api.x_ratelimit_remaining)
+				print remaining_calls	
 				for user in follows:
 					user_follows_list.append(user.id)
 			return user_follows_list, remaining_calls
@@ -259,7 +262,11 @@ class AddUserFollows():
 		""" A method that stores the follow relationship as a directed 
 			pair in the database."""
 
-		pass
+		if user_follows_list:
+			for instagram_id in user_follows_list:
+				new_relationship = Follower(instagram_id=instagram_id,
+											follower_id=self._instagram_id)
+				commit_to_db(new_relationship)
 
 
 
