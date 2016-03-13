@@ -216,7 +216,37 @@ class AddUserFollowers():
 
 		if user_follower_list:
 			for follower_id in user_follower_list:
-				new_follower = Follower(instagram_id=self._instagram_id,follower_id=follower_id)
+				new_follower = Follower(instagram_id=self._instagram_id,
+										follower_id=follower_id)
 				commit_to_db(new_follower)
+
+class AddUserFollows():
+	""" This class defines the methods to pull the list of users that a given
+		instagram user follows. So input is a instagram_id and stores the
+		relationships in the Follwer table."""
+
+	def __init__(self,instagram_id):
+		self._instagram_id = instagram_id
+
+		# Grab and store the list of user follows.
+		follows, remaining_calls = self._get_user_follows()
+		self.store_follows(follows)
+
+	def _get_user_follows(self):
+		""" Given an instagram_id, this will return a tuple containing 
+			the list of users that the given account follows, and the 
+			count of remaining_calls available to make on the api."""
+
+		pass
+
+
+	def _store_follows(self,user_follow_list):
+		""" A method that stores the follow relationship as a directed 
+			pair in the database."""
+
+		pass
+
+
+
 
 
