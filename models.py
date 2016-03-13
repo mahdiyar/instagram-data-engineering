@@ -237,10 +237,25 @@ class AddUserFollows():
 			the list of users that the given account follows, and the 
 			count of remaining_calls available to make on the api."""
 
-		pass
+		try:
+			user_follows_list = []
+			follows, next = api.user_follows(user_id=user_id)
+			remaining_calls = int(api.x_ratelimit_remaining)
+			for user in follows:
+				user_follows_list.append(user.id)
+			while next:
+				follows, next = api.user_follows(with_next_url=next)
+				remaining_calls = int(api.x_ratelimit_remaining)	
+				for user in follows:
+					user_follows_list.append(user.id)
+			return user_follows_list, remaining_calls
+		
+		except InstagramAPIError:
+			print 'This user is private'
+			return None, None		
 
 
-	def _store_follows(self,user_follow_list):
+	def _store_follows(self,user_follows_list):
 		""" A method that stores the follow relationship as a directed 
 			pair in the database."""
 
