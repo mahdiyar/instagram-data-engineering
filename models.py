@@ -268,6 +268,18 @@ class AddUserFollows():
 											follower_id=self._instagram_id)
 				commit_to_db(new_relationship)
 
+class TargetDataPull():
+	""" This is a class that pulls the all of the data necessary to
+		analyze the target customer. This is the second order data pull.
+		Pass in a instagram id and it will pull and store the user's
+		profile, recent media, and what accounts they follow."""
+
+	def __init__(self,instagram_id):
+		self._instagram_id = instagram_id
+
+		AddUserProfile(self._instagram_id)
+		AddUserMedia(self._instagram_id)
+		AddUserFollows(self._instagram_id)
 
 
 
