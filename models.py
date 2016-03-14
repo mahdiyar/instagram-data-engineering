@@ -59,8 +59,9 @@ class AddUserProfile():
 	'''This class takes a instagram_id and grabs a user's profile information
 	   stores it in the database.'''
 
-	def __init__(self,instagram_id):
+	def __init__(self,instagram_id,user_order):
 		self._instagram_id = instagram_id
+		self._user_order = user_order
 		# Check to see if user is in already in database. 
 		ret = session.query(exists()\
 					 .where(InstagramUser.instagram_id==self._instagram_id))\
@@ -106,6 +107,7 @@ class AddUserProfile():
 							num_followers=instagram_user_profile['num_followers'],
 							num_following=instagram_user_profile['num_following'],
 							num_posts=instagram_user_profile['num_posts'],
+							user_order=self._user_order,
 							stored_at=datetime.now())
 			commit_to_db(new_user)
 
@@ -294,13 +296,12 @@ class TargetDataPull():
 		Pass in a instagram id and it will pull and store the user's
 		profile, recent media, and what accounts they follow."""
 
-	def __init__(self,instagram_id):
+	def __init__(self,instagram_id,user_order=2):
 		self._instagram_id = instagram_id
 
-		AddUserProfile(self._instagram_id)
+		AddUserProfile(self._instagram_id,user_order)
 		AddUserMedia(self._instagram_id)
 		AddUserFollows(self._instagram_id)
-
 
 
 
