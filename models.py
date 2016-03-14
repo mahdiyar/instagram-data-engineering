@@ -8,6 +8,8 @@ from sqlalchemy.exc import IntegrityError
 from instagram.client import InstagramAPI
 from instagram.bind import InstagramAPIError
 
+from datetime import datetime
+
 from db_setup import Base, InstagramUser, Media, Follower
 
 # Configuring the database connection.
@@ -103,7 +105,8 @@ class AddUserProfile():
 							bio=instagram_user_profile['bio'],
 							num_followers=instagram_user_profile['num_followers'],
 							num_following=instagram_user_profile['num_following'],
-							num_posts=instagram_user_profile['num_posts'])
+							num_posts=instagram_user_profile['num_posts'],
+							stored_at=datetime.now())
 			commit_to_db(new_user)
 
 
