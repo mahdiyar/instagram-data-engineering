@@ -111,12 +111,21 @@ class AddUserMedia():
 	''' This class takes an instagram_id and grabs the user's recent media
 		and stores all of this information in the database.'''
 
-	def __init__(self,instagram_id,max_media=10):
+	def __init__(self,instagram_id):
 		self._instagram_id = instagram_id
+		# Check to see if media exists in Database. Can be made smarter to 
+		# make sure a certain amount exists. 
 
-		# Grab and store a user's recent media data.
-		media, _ = self._get_user_media()
-		self._store_media(media)
+		ret = session.query(exists()\
+					 .where(Media.instagram_id==self._instagram_id))\
+					 .scalar()
+		if not ret:
+			# Grab and store a user's recent media data.
+			print 'Storing user media'
+			media, _ = self._get_user_media()
+			self._store_media(media)
+		else:
+			print 'Media for this user already exists.'
 
 
 	def _get_user_media(self):
