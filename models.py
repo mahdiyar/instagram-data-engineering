@@ -298,10 +298,24 @@ class TargetDataPull():
 
 	def __init__(self,instagram_id,user_order=2):
 		self._instagram_id = instagram_id
+		self._user_order = user_order
 
-		AddUserProfile(self._instagram_id,user_order)
+		AddUserProfile(self._instagram_id,self._user_order)
 		AddUserMedia(self._instagram_id)
 		AddUserFollows(self._instagram_id)
 
+
+class CandidateDataPull():
+	""" This is a class that pulls the data necessary to analyze the canddates
+		(these are the users that followers follow). This is a third order
+		data pull. Pass in a instagram id and it will pull and store the
+		user's profile, recent media, and what accounts they follow."""
+
+	def __init__(self,instagram_id,user_order=3):
+		self._instagram_id = instagram_id
+		self._user_order = user_order
+
+		AddUserProfile(self._instagram_id,self._user_order)
+		AddUserMedia(self._instagram_id)
 
 
