@@ -29,7 +29,8 @@ def get_user_id(username):
 		Only returns exact match. '''
 
 	user_search = api.user_search(q=username)
-	return str(user_search[0].id)
+	user_ids = {user.__dict__['username']:user.id for user in user_search}
+	return str(user_ids[username])
 
 def rate_limit_check():
 	''' Given a username, return the instagram user_id.
