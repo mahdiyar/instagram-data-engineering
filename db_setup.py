@@ -19,7 +19,7 @@ class InstagramUser(Base):
 	longitude = Column(String(80))
 
 	## Relationships
-	follower = relationship('Follower', backref="instagram_user")
+	# follower = relationship('Follower', backref="instagram_user")
 	media = relationship('Media', backref="instagram_user")
 	influencer = relationship('Influencer', backref="instagram_user")
 	client = relationship('Client', backref="instagram_user")
@@ -41,7 +41,9 @@ class Follower(Base):
 	__tablename__ = 'follower'
 
 	id = Column(Integer, primary_key=True)
-	instagram_id = Column(String(80),ForeignKey('instagram_user.instagram_id'),nullable=False)
+	# May need to add foreign key relation to instagram id
+	# ForeignKey('instagram_user.instagram_id')
+	instagram_id = Column(String(80),nullable=False)
 	follower_id = Column(String(80),nullable=False)
 
 	__table_args__ = (UniqueConstraint('instagram_id', 'follower_id', 
