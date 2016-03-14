@@ -3,6 +3,7 @@ import cnfg
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql import exists
 from sqlalchemy.exc import IntegrityError
 from instagram.client import InstagramAPI
 from instagram.bind import InstagramAPIError
@@ -58,10 +59,18 @@ class AddUserProfile():
 
 	def __init__(self,instagram_id):
 		self._instagram_id = instagram_id
-		# Grab and store a user's basic profile data.
-		basics, rate = self._get_user_profile()
-		print rate
-		self._store_user(basics)
+		# Check to see if user is in already in database. 
+		ret = session.query(exists()\
+					 .where(InstagramUser.instagram_id==self._instagram_id))\
+					 .scalar()
+		if not ret:
+			print 'Storing new user'
+			# Grab and store a user's basic profile data.
+			basics, rate = self._get_user_profile()
+			print rate
+			self._store_user(basics)
+		else:
+			print 'User aleady in DB'
 
 	def _get_user_profile(self):
 		''' Returns a tuple including a dictionary with instagram user data
@@ -104,7 +113,6 @@ class AddUserMedia():
 
 	def __init__(self,instagram_id,max_media=10):
 		self._instagram_id = instagram_id
-		self._max_media = float(max_media)
 
 		# Grab and store a user's recent media data.
 		media, _ = self._get_user_media()
