@@ -1,4 +1,5 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, Text, UniqueConstraint
+from sqlalchemy import (Column, ForeignKey, Integer, String, Boolean, 
+						Text, UniqueConstraint,DateTime)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
@@ -17,6 +18,7 @@ class InstagramUser(Base):
 	num_posts = Column(Integer)
 	latitude = Column(String(80))
 	longitude = Column(String(80))
+	stored_at = Column(DateTime)
 
 	## Relationships
 	# follower = relationship('Follower', backref="instagram_user")
@@ -29,8 +31,9 @@ class Media(Base):
 	__tablename__ = 'media'
 
 	id = Column(Integer, primary_key=True)
-	instagram_id = Column(String(80), ForeignKey('instagram_user.instagram_id'), nullable=False)
-	media_id = Column(String(280), nullable = False, unique=True)
+	instagram_id = Column(String(80),ForeignKey('instagram_user.instagram_id'),
+									 nullable=False)
+	media_id = Column(String(280),nullable=False,unique=True)
 	num_likes = Column(Integer)
 	num_comments = Column(Integer)
 	latitude = Column(String(80))
