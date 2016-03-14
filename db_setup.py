@@ -18,6 +18,7 @@ class InstagramUser(Base):
 	num_posts = Column(Integer)
 	latitude = Column(String(80))
 	longitude = Column(String(80))
+	user_order = Column(Integer,nullable=False)
 	stored_at = Column(DateTime)
 
 	## Relationships
