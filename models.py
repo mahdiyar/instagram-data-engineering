@@ -341,16 +341,26 @@ class InfluencerDataPull():
 		AddUserProfile(self._instagram_id,self._user_order)
 		AddUserMedia(self._instagram_id)
 		AddUserFollowers(self._instagram_id)
+		AddUserFollows(self._instagram_id)
 
 		followers = self._get_list_followers()
 		for follower_id in followers:
 			TargetDataPull(follower_id)
+
+		follows = self._get_list_follows()
+		for follow_id in follows:
+			CandidateDataPull(follow_id)
 
 
 	def _get_list_followers(self):
 		q = session.query(Follower).filter_by(instagram_id=self._instagram_id)
 		followers = [relationship.follower_id for relationship in q]
 		return followers
+
+	def _get_list_follows(self):
+		q = session.query(Follower).filter_by(follower_id=self._instagram_id)
+		follows = [relationship.instagram_id for relationship in q]
+		return follows
 
 
 
