@@ -322,6 +322,30 @@ class InfluencerDataPull():
 		self._instagram_id = instagram_id
 		self._user_order = user_order
 
+		# Checking whether the user already exists in the database.
+		ret = session.query(exists()\
+					 .where(InstagramUser.instagram_id==self._instagram_id))\
+					 .scalar()
+		
+		if not ret:
+			print 'in new user full pull'
+			self._full_pull()
+		else:
+			user_query = session.query(InstagramUser)\
+				   .filter_by(instagram_id=self._instagram_id)\
+				   .one()
+			if user_query.user_order == 2:
+				print 'in order 2 partial pull'
+				self._partial_pull()
+			elif user_query.user_order == 3:
+				print 'in order 3 full pull'
+				self._full_pull()
+			else:
+				assert user_query.user_order == 1
+				print 'already have user at order 1, no pull'
+
+	def _full_pull(self):
+		## full pul of all the data
 		AddUserProfile(self._instagram_id,self._user_order)
 		AddUserMedia(self._instagram_id)
 		AddUserFollowers(self._instagram_id)
@@ -335,6 +359,13 @@ class InfluencerDataPull():
 		for follow_id in follows:
 			CandidateDataPull(follow_id)
 
+	def _partial_pull(self):
+		## partial pull because already have follows
+		AddUserFollowers(self._instagram_id)
+
+		followers = self._get_list_followers()
+		for follower_id in followers:
+			TargetDataPull(follower_id)
 
 	def _get_list_followers(self):
 		q = session.query(Follower).filter_by(instagram_id=self._instagram_id)
@@ -345,6 +376,10 @@ class InfluencerDataPull():
 		q = session.query(Follower).filter_by(follower_id=self._instagram_id)
 		follows = [relationship.instagram_id for relationship in q]
 		return follows
+
+	def _update_user_order(self):
+		## updates the user order
+		pass
 
 
 
