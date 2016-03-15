@@ -54,6 +54,23 @@ def commit_to_db(new_object):
 		session.rollback()
 		# session.close()
 
+def user_exists(instagram_id):
+	""" This function checks to see if a user exists in the instagram user
+		table. If they do, it returns their user object. Otherwise it returns
+		None. """
+
+	user_exists = session.query(exists()\
+					 .where(InstagramUser.instagram_id==instagram_id))\
+					 .scalar()
+	if user_exists:
+		user = session.query(InstagramUser)\
+				   .filter_by(instagram_id=instagram_id)\
+				   .one()
+		return user
+	else:
+		return None
+
+
 
 ######## Classes to pull user information from Instagram ########
 class AddUserProfile():
@@ -286,8 +303,13 @@ class CandidateDataPull():
 		self._instagram_id = instagram_id
 		self._user_order = user_order
 
-		AddUserProfile(self._instagram_id,self._user_order)
-		AddUserMedia(self._instagram_id)
+		user = user_exists(self._instagram_id)
+		if user:
+			print 'user already exists'
+		else:
+			AddUserProfile(self._instagram_id,self._user_order)
+			AddUserMedia(self._instagram_id)
+
 
 class TargetDataPull():
 	""" This is a class that pulls the all of the data necessary to
@@ -299,8 +321,30 @@ class TargetDataPull():
 		self._instagram_id = instagram_id
 		self._user_order = user_order
 
+		# Checking whether the user already exists in the database.
+		user = user_exists(self._instagram_id)
+		if user:
+			if user.user_order <= 2:
+				print 'order 1 or 2 user already exists'
+				pass
+			else:
+				print 'in order 3 full pull'
+				self._partial_3_2_pull()
+				self._update_order_to_2()
+		else:
+			print 'new user-- full 2 pull'
+			self._full_2_pull()
+
+	def _full_2_pull(self):
 		AddUserProfile(self._instagram_id,self._user_order)
 		AddUserMedia(self._instagram_id)
+		AddUserFollows(self._instagram_id)
+
+		follows = self._get_list_follows()
+		for follow_id in follows:
+			CandidateDataPull(follow_id)
+	
+	def _partial_3_2_pull(self):
 		AddUserFollows(self._instagram_id)
 
 		follows = self._get_list_follows()
@@ -311,6 +355,13 @@ class TargetDataPull():
 		q = session.query(Follower).filter_by(follower_id=self._instagram_id)
 		follows = [relationship.instagram_id for relationship in q]
 		return follows
+
+	def _update_order_to_2(self):
+		instagram_user = session.query(InstagramUser)\
+							    .filter_by(instagram_id=self._instagram_id)\
+							    .one()
+		instagram_user.user_order = 2
+		commit_to_db(instagram_user)
 
 class InfluencerDataPull():
 	""" This is a class that pulls the all of the data necessary to
@@ -323,30 +374,26 @@ class InfluencerDataPull():
 		self._user_order = user_order
 
 		# Checking whether the user already exists in the database.
-		ret = session.query(exists()\
-					 .where(InstagramUser.instagram_id==self._instagram_id))\
-					 .scalar()
-		
-		if not ret:
-			print 'in new user full pull'
-			self._full_pull()
-		else:
-			user_query = session.query(InstagramUser)\
-				   .filter_by(instagram_id=self._instagram_id)\
-				   .one()
-			if user_query.user_order == 2:
+		user = user_exists(self._instagram_id)
+
+		if user:
+			if user.user_order == 2:
 				print 'in order 2 partial pull'
-				self._partial_pull()
+				self._partial_2_1_pull()
 				self._update_order_to_1()
-			elif user_query.user_order == 3:
+			elif user.user_order == 3:
 				print 'in order 3 full pull'
-				# self._full_pull()
+				self._partial_3_1_pull()
 				self._update_order_to_1()
 			else:
-				assert user_query.user_order == 1
+				assert user.user_order == 1
 				print 'already have user at order 1, no pull'
+		else:
+			print 'in new user-- full pull'
+			self._full_1_pull()
+			
 
-	def _full_pull(self):
+	def _full_1_pull(self):
 		## full pul of all the data
 		AddUserProfile(self._instagram_id,self._user_order)
 		AddUserMedia(self._instagram_id)
@@ -361,7 +408,19 @@ class InfluencerDataPull():
 		for follow_id in follows:
 			CandidateDataPull(follow_id)
 
-	def _partial_pull(self):
+	def _partial_3_1_pull(self):
+		AddUserFollowers(self._instagram_id)
+		AddUserFollows(self._instagram_id)
+
+		followers = self._get_list_followers()
+		for follower_id in followers:
+			TargetDataPull(follower_id)
+
+		follows = self._get_list_follows()
+		for follow_id in follows:
+			CandidateDataPull(follow_id)
+
+	def _partial_2_1_pull(self):
 		## partial pull because already have follows
 		AddUserFollowers(self._instagram_id)
 
