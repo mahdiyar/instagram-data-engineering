@@ -337,9 +337,11 @@ class InfluencerDataPull():
 			if user_query.user_order == 2:
 				print 'in order 2 partial pull'
 				self._partial_pull()
+				self._update_order_to_1()
 			elif user_query.user_order == 3:
 				print 'in order 3 full pull'
-				self._full_pull()
+				# self._full_pull()
+				self._update_order_to_1()
 			else:
 				assert user_query.user_order == 1
 				print 'already have user at order 1, no pull'
@@ -377,9 +379,15 @@ class InfluencerDataPull():
 		follows = [relationship.instagram_id for relationship in q]
 		return follows
 
-	def _update_user_order(self):
+	def _update_order_to_1(self):
 		## updates the user order
-		pass
+		instagram_user = session.query(InstagramUser)\
+							    .filter_by(instagram_id=self._instagram_id)\
+							    .one()
+		instagram_user.user_order = 1
+		commit_to_db(instagram_user)
+
+
 
 
 
