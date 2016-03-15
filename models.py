@@ -63,18 +63,10 @@ class AddUserProfile():
 	def __init__(self,instagram_id,user_order):
 		self._instagram_id = instagram_id
 		self._user_order = user_order
-		# Check to see if user is in already in database. 
-		ret = session.query(exists()\
-					 .where(InstagramUser.instagram_id==self._instagram_id))\
-					 .scalar()
-		if not ret:
-			print 'Storing new user'
-			# Grab and store a user's basic profile data.
-			basics, rate = self._get_user_profile()
-			print rate
-			self._store_user(basics)
-		else:
-			print 'User aleady in DB'
+		# Grab and store a user's basic profile data.
+		basics, rate = self._get_user_profile()
+		print rate
+		self._store_user(basics)
 
 	def _get_user_profile(self):
 		''' Returns a tuple including a dictionary with instagram user data
@@ -119,19 +111,11 @@ class AddUserMedia():
 
 	def __init__(self,instagram_id):
 		self._instagram_id = instagram_id
-		# Check to see if media exists in Database. Can be made smarter to 
-		# make sure a certain amount exists. 
+		# Grab and store a user's recent media data.
+		print 'Storing user media'
+		media, _ = self._get_user_media()
+		self._store_media(media)
 
-		ret = session.query(exists()\
-					 .where(Media.instagram_id==self._instagram_id))\
-					 .scalar()
-		if not ret:
-			# Grab and store a user's recent media data.
-			print 'Storing user media'
-			media, _ = self._get_user_media()
-			self._store_media(media)
-		else:
-			print 'Media for this user already exists.'
 
 
 	def _get_user_media(self):
