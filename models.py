@@ -291,6 +291,20 @@ class AddUserFollows():
 											follower_id=self._instagram_id)
 				commit_to_db(new_relationship)
 
+
+class CandidateDataPull():
+	""" This is a class that pulls the data necessary to analyze the canddates
+		(these are the users that followers follow). This is a third order
+		data pull. Pass in a instagram id and it will pull and store the
+		user's profile, recent media, and what accounts they follow."""
+
+	def __init__(self,instagram_id,user_order=3):
+		self._instagram_id = instagram_id
+		self._user_order = user_order
+
+		AddUserProfile(self._instagram_id,self._user_order)
+		AddUserMedia(self._instagram_id)
+
 class TargetDataPull():
 	""" This is a class that pulls the all of the data necessary to
 		analyze the target customer. This is the second order data pull.
@@ -305,18 +319,43 @@ class TargetDataPull():
 		AddUserMedia(self._instagram_id)
 		AddUserFollows(self._instagram_id)
 
+		follows = self._get_list_follows()
+		for follow_id in follows:
+			CandidateDataPull(follow_id)
 
-class CandidateDataPull():
-	""" This is a class that pulls the data necessary to analyze the canddates
-		(these are the users that followers follow). This is a third order
-		data pull. Pass in a instagram id and it will pull and store the
-		user's profile, recent media, and what accounts they follow."""
+	def _get_list_follows(self):
+		q = session.query(Follower).filter_by(follower_id=self._instagram_id)
+		follows = [relationship.instagram_id for relationship in q]
+		return follows
 
-	def __init__(self,instagram_id,user_order=3):
+class InfluencerDataPull():
+	""" This is a class that pulls the all of the data necessary to
+		analyze the influencer. This is the first order data pull.
+		Pass in a instagram id and it will pull and store the user's
+		profile, recent media, and what accounts they follow."""
+
+	def __init__(self,instagram_id,user_order=1):
 		self._instagram_id = instagram_id
 		self._user_order = user_order
 
 		AddUserProfile(self._instagram_id,self._user_order)
 		AddUserMedia(self._instagram_id)
+		AddUserFollowers(self._instagram_id)
+
+		followers = self._get_list_followers()
+		for follower_id in followers:
+			TargetDataPull(follower_id)
+
+
+	def _get_list_followers(self):
+		q = session.query(Follower).filter_by(instagram_id=self._instagram_id)
+		followers = [relationship.follower_id for relationship in q]
+		return followers
+
+
+
+
+
+
 
 
