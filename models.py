@@ -68,6 +68,17 @@ def user_exists(instagram_id):
 	else:
 		return None
 
+def update_pull_completion(instagram_id):
+	""" Update a user's pull completion to True."""
+	user = session.query(InstagramUser)\
+				   .filter_by(instagram_id=instagram_id)\
+				   .one()
+	user.pull_completion = True
+	print 'Updated to pull complete to true.'
+	commit_to_db(user)
+
+
+
 ################################################################
 ########## Classes to pull and store Instagram data ############
 ################################################################
