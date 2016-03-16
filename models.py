@@ -1,5 +1,5 @@
-import math
 import cnfg
+from datetime import datetime
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -7,8 +7,6 @@ from sqlalchemy.sql import exists
 from sqlalchemy.exc import IntegrityError
 from instagram.client import InstagramAPI
 from instagram.bind import InstagramAPIError
-
-from datetime import datetime
 
 from db_setup import Base, InstagramUser, Media, Follower
 
@@ -23,32 +21,31 @@ config = cnfg.load(".instagram_config")
 api = InstagramAPI(client_id=config['CLIENT_ID'], 
 				   client_secret=config['CLIENT_SECRET'])
 
+################################################################
+#################      Helper functions        #################
+################################################################
 
 def get_user_id(username):
-	''' Given a username, return the instagram user_id.
-		Only returns exact match. '''
+	""" Given a instagram username, return the instagram_id."""
 
 	user_search = api.user_search(q=username)
 	user_ids = {user.__dict__['username']:user.id for user in user_search}
 	return str(user_ids[username])
 
 def rate_limit_check():
-	''' Given a username, return the instagram user_id.
-		Only returns exact match. '''
+	""" Ping the instagram api and return the rate limit."""
 
 	user_search = api.user_search(q='instagram')
 	remaining_calls = int(api.x_ratelimit_remaining)
-
 	return remaining_calls
 
-
 def commit_to_db(new_object):
-	'''Commiting new object to the database.'''
+	""" Commit new object to the database."""
 
 	try:
 		session.add(new_object)
 		session.commit()
-		print "succesfully added object!"
+		print "Succesfully added object!"
 	except IntegrityError:
 		print "IntegrityError"
 		session.rollback()
@@ -59,6 +56,7 @@ def user_exists(instagram_id):
 		table. If they do, it returns their user object. Otherwise it returns
 		None. """
 
+	# Query database to see if instagram_id exists in instagram_user table.
 	user_exists = session.query(exists()\
 					 .where(InstagramUser.instagram_id==instagram_id))\
 					 .scalar()
@@ -70,8 +68,10 @@ def user_exists(instagram_id):
 	else:
 		return None
 
+################################################################
+########## Classes to pull and store Instagram data ############
+################################################################
 
-######## Classes to pull user information from Instagram ########
 class AddUserProfile():
 	'''This class takes a instagram_id and grabs a user's profile information
 	   stores it in the database.'''
@@ -82,12 +82,18 @@ class AddUserProfile():
 		# Grab and store a user's basic profile data.
 
 		if user_exists(self._instagram_id):
-			print 'user already exists'
+			print 'User data: user profile already in database.'
 			pass
 		else:
-			basics, rate = self._get_user_profile()
-			print rate
-			self._store_user(basics)
+			try:
+				print 'User data: storing user profile and media in database.'
+				basics, _ = self._get_user_profile()
+				media, rate = self._get_user_media()
+				print rate
+				self._store_user(basics)
+				self._store_media(media)
+			except InstagramAPIError:
+				print 'Private: this user is private.'
 
 	def _get_user_profile(self):
 		''' Returns a tuple including a dictionary with instagram user data
@@ -95,21 +101,36 @@ class AddUserProfile():
 			available to make on the api. If the user's account
 			is private this will return (None, None).'''
 
-		try:
-			instagram_user = api.user(user_id = self._instagram_id)
-			remaining_calls = int(api.x_ratelimit_remaining)
-			# Extract data and store in dict
-			instagram_user_profile = {'instagram_id' : self._instagram_id}
-			instagram_user_profile['instagram_username'] = instagram_user.username
-			instagram_user_profile['bio'] = instagram_user.bio
-			instagram_user_profile['num_followers']= instagram_user.counts['followed_by']
-			instagram_user_profile['num_following'] = instagram_user.counts['follows']
-			instagram_user_profile['num_posts'] = instagram_user.counts['media']
+		instagram_user = api.user(user_id = self._instagram_id)
+		remaining_calls = int(api.x_ratelimit_remaining)
+		# Extract data and store in dict
+		instagram_user_profile = {'instagram_id' : self._instagram_id}
+		instagram_user_profile['instagram_username'] = instagram_user.username
+		instagram_user_profile['bio'] = instagram_user.bio
+		instagram_user_profile['num_followers']= instagram_user.counts['followed_by']
+		instagram_user_profile['num_following'] = instagram_user.counts['follows']
+		instagram_user_profile['num_posts'] = instagram_user.counts['media']
+		return instagram_user_profile, remaining_calls
 
-			return instagram_user_profile, remaining_calls
-		except InstagramAPIError:
-			print 'This user is private'
-			return None, None
+	def _get_user_media(self):
+		''' Given an instagram user id, this return a tuple including a list 
+			of dictionaries containing data on the user's recent media and 
+			the amount of remaining calls available to make on the api. If 
+			the user's account is private this will return (None, None).
+		'''
+
+		media_list, next = api.user_recent_media(user_id = self._instagram_id)
+		remaining_calls = int(api.x_ratelimit_remaining)
+		user_media_list = []
+		for media in media_list:
+			user_media = {'media_id' : media.id,
+						  'num_likes' : media.like_count,
+						  'num_comments' : media.comment_count,
+						  'caption' : self._get_caption_text(media),
+						  'latitude' : self._get_latitude(media),
+						  'longitude' : self._get_longitude(media)}
+			user_media_list.append(user_media)
+		return user_media_list, remaining_calls
 
 	def _store_user(self,instagram_user_profile):
 		'''Stores a user's basic information dict in the database.'''
@@ -125,50 +146,6 @@ class AddUserProfile():
 							stored_at=datetime.now())
 			commit_to_db(new_user)
 
-
-class AddUserMedia():
-	''' This class takes an instagram_id and grabs the user's recent media
-		and stores all of this information in the database.'''
-
-	def __init__(self,instagram_id):
-		self._instagram_id = instagram_id
-		
-		user = user_exists(self._instagram_id)
-		if user:
-			# Grab and store a user's recent media data.
-			print 'Storing user media'
-			media, _ = self._get_user_media()
-			self._store_media(media)
-		else:
-			print 'not stroring media: user not in db'
-
-
-
-	def _get_user_media(self):
-		''' Given an instagram user id, this return a tuple including a list 
-			of dictionaries containing data on the user's recent media and 
-			the amount of remaining calls available to make on the api. If 
-			the user's account is private this will return (None, None).
-		'''
-
-		try:
-			media_list, next = api.user_recent_media(user_id = self._instagram_id)
-			remaining_calls = int(api.x_ratelimit_remaining)
-			user_media_list = []
-			for media in media_list:
-				user_media = {'media_id' : media.id,
-							  'num_likes' : media.like_count,
-							  'num_comments' : media.comment_count,
-							  'caption' : self._get_caption_text(media),
-							  'latitude' : self._get_latitude(media),
-							  'longitude' : self._get_longitude(media)}
-				user_media_list.append(user_media)
-			return user_media_list, remaining_calls
-
-		except InstagramAPIError:
-			print 'This user is private'
-			return None, None
-
 	def _store_media(self,user_media_list):
 		'''Stores a user's media dict in the database.'''
 
@@ -181,7 +158,7 @@ class AddUserMedia():
 								  caption=media['caption'],
 								  latitude=media['latitude'],
 								  longitude=media['longitude'])
-				commit_to_db(new_media)
+				commit_to_db(new_media)	
 
 	##### Helper functions ######
 	def _get_latitude(self,media_object):
@@ -222,7 +199,7 @@ class AddUserFollowers():
 				print remaining_calls
 				self._store_followers(followers)
 			else:
-				print 'enough followers already in db'
+				print 'Followers: Count of followers is within bound.'
 				pass
 		else: 
 			print 'not stroring followers: user not in db'
@@ -295,7 +272,7 @@ class AddUserFollows():
 				print remaining_calls
 				self._store_follows(follows)
 			else:
-				print 'Enough of the users following already exits in db.'
+				print 'Follows: Count of following is within bound.'
 				pass
 		else:
 			print 'not stroring follows: user not in db'
@@ -352,6 +329,10 @@ class AddUserFollows():
 		return prof_count-bound <= db_count <= prof_count+bound
 
 
+################################################################
+########## Classes that pull various orders of data  ###########
+################################################################
+
 class CandidateDataPull():
 	""" This is a class that pulls the data necessary to analyze the canddates
 		(these are the users that followers follow). This is a third order
@@ -362,12 +343,7 @@ class CandidateDataPull():
 		self._instagram_id = instagram_id
 		self._user_order = user_order
 
-		user = user_exists(self._instagram_id)
-		if user:
-			print 'user already exists'
-		else:
-			AddUserProfile(self._instagram_id,self._user_order)
-			AddUserMedia(self._instagram_id)
+		AddUserProfile(self._instagram_id,self._user_order)
 
 
 class TargetDataPull():
@@ -396,7 +372,6 @@ class TargetDataPull():
 
 	def _full_2_pull(self):
 		AddUserProfile(self._instagram_id,self._user_order)
-		AddUserMedia(self._instagram_id)
 		AddUserFollows(self._instagram_id)
 
 		follows = self._get_list_follows()
@@ -459,7 +434,6 @@ class InfluencerDataPull():
 	def _full_1_pull(self):
 		## full pul of all the data
 		AddUserProfile(self._instagram_id,self._user_order)
-		AddUserMedia(self._instagram_id)
 		AddUserFollowers(self._instagram_id)
 		AddUserFollows(self._instagram_id)
 
@@ -508,13 +482,5 @@ class InfluencerDataPull():
 							    .one()
 		instagram_user.user_order = 1
 		commit_to_db(instagram_user)
-
-
-
-
-
-
-
-
 
 
