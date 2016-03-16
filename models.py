@@ -71,7 +71,6 @@ def user_exists(instagram_id):
 		return None
 
 
-
 ######## Classes to pull user information from Instagram ########
 class AddUserProfile():
 	'''This class takes a instagram_id and grabs a user's profile information
@@ -81,9 +80,14 @@ class AddUserProfile():
 		self._instagram_id = instagram_id
 		self._user_order = user_order
 		# Grab and store a user's basic profile data.
-		basics, rate = self._get_user_profile()
-		print rate
-		self._store_user(basics)
+
+		if user_exists(self._instagram_id):
+			print 'user already exists'
+			pass
+		else:
+			basics, rate = self._get_user_profile()
+			print rate
+			self._store_user(basics)
 
 	def _get_user_profile(self):
 		''' Returns a tuple including a dictionary with instagram user data
@@ -205,10 +209,15 @@ class AddUserFollowers():
 		self._instagram_id = instagram_id
 		self._max_followers = float(max_followers)
 
-		# Grab and store a user's list of followers.
-		followers, remaining_calls = self._get_user_followers()
-		print remaining_calls
-		self._store_followers(followers)
+		user = user_exists(self._instagram_id)
+		if not self._follower_count_within_range(.1):
+			# Grab and store a user's list of followers.
+			followers, remaining_calls = self._get_user_followers()
+			print remaining_calls
+			self._store_followers(followers)
+		else:
+			print 'enough followers already in db'
+			pass
 
 	def _get_user_followers(self):
 		''' Given an instagram_id this will return a tuple containing
@@ -233,6 +242,22 @@ class AddUserFollowers():
 		except InstagramAPIError:
 			print 'This user is private'
 			return None, None
+
+	def _follower_count_within_range(self,prec_range):
+		""" This function checks the database to see if the number of followers
+			in the Follower table is within a range of the current number in 
+			the user's profile."""
+
+		followers = session.query(Follower)\
+						   .filter_by(instagram_id=self._instagram_id)
+		db_count = followers.count()
+		user = session.query(InstagramUser)\
+					  .filter_by(instagram_id=self._instagram_id)\
+					  .one()
+		prof_count = user.num_followers
+		bound = prof_count*prec_range
+
+		return prof_count-bound <= db_count <= prof_count+bound
 
 	def _store_followers(self,user_follower_list):
 		''' A function that stores the user-follower relationship
@@ -387,7 +412,11 @@ class InfluencerDataPull():
 				self._update_order_to_1()
 			else:
 				assert user.user_order == 1
-				print 'already have user at order 1, no pull'
+				if not user.pull_completion:
+					self._full_1_pull()
+				else:
+					print 'already have user at order 1, no pull'
+					pass
 		else:
 			print 'in new user-- full pull'
 			self._full_1_pull()
