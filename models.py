@@ -365,18 +365,29 @@ class TargetDataPull():
 		# Checking whether the user already exists in the database.
 		user = user_exists(self._instagram_id)
 		if user:
-			# Check if user has already been pulled at lower order.
-			if user.user_order <= 2:
-				print 'Target Pull: user already exists at lower order.'
-				pass
-			else:
+			# Different pull levels for different existing user orders. 
+			if user.user_order == 3:
 				print 'Target Pull: order 3 user exists, preform order2 pull.'
 				self._update_order_to_2()
 				self._partial_3_2_pull()
-				
+			elif user.user_order == 2:
+				if not user.pull_completion:
+					print 'Target Pull: user not complete. Full 2 pull.'
+					self._full_2_pull()	
+				else:
+					print 'Target Pull: user pull already complete.'
+					pass
+			else:
+				if not user.pull_completion:
+					print 'Target Pull: user not complete. Full 2 pull.'
+					self._full_2_pull()
+				else:
+					print 'Target Pull: user pull already complete.'
+					pass		
 		else:
-			print 'Target Pull: user does not exists, preform order2 pull.'
+			print 'Target Pull: user does not exist. Full 2 pull.'
 			self._full_2_pull()
+
 
 	def _full_2_pull(self):
 		""" Pull user profile. Pull all following and preform order 3
@@ -441,9 +452,10 @@ class InfluencerDataPull():
 				self._partial_3_1_pull()
 			else:
 				if not user.pull_completion:
+					print 'Influnecer Pull: completing user pull.'
 					self._full_1_pull()
 				else:
-					print 'Influnecer Pull: user exists at lower order.'
+					print 'Influnecer Pull: complete user at lower order.'
 					pass
 		else:
 			print 'Influnecer Pull: user doesnt exist. preform order1 pull.'
