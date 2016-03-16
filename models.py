@@ -132,10 +132,15 @@ class AddUserMedia():
 
 	def __init__(self,instagram_id):
 		self._instagram_id = instagram_id
-		# Grab and store a user's recent media data.
-		print 'Storing user media'
-		media, _ = self._get_user_media()
-		self._store_media(media)
+		
+		user = user_exists(self._instagram_id)
+		if user:
+			# Grab and store a user's recent media data.
+			print 'Storing user media'
+			media, _ = self._get_user_media()
+			self._store_media(media)
+		else:
+			print 'not stroring media: user not in db'
 
 
 
@@ -210,14 +215,17 @@ class AddUserFollowers():
 		self._max_followers = float(max_followers)
 
 		user = user_exists(self._instagram_id)
-		if not self._follower_count_within_range(.1):
-			# Grab and store a user's list of followers.
-			followers, remaining_calls = self._get_user_followers()
-			print remaining_calls
-			self._store_followers(followers)
-		else:
-			print 'enough followers already in db'
-			pass
+		if user:
+			if not self._follower_count_within_range(.1):
+				# Grab and store a user's list of followers.
+				followers, remaining_calls = self._get_user_followers()
+				print remaining_calls
+				self._store_followers(followers)
+			else:
+				print 'enough followers already in db'
+				pass
+		else: 
+			print 'not stroring followers: user not in db'
 
 	def _get_user_followers(self):
 		''' Given an instagram_id this will return a tuple containing
@@ -280,14 +288,17 @@ class AddUserFollows():
 		# Check if there are already enough of the users following
 		# in the database.
 		user = user_exists(self._instagram_id)
-		if not self._follows_count_within_range(.1):
-			# Grab and store the list of user follows.
-			follows, remaining_calls = self._get_user_follows()
-			print remaining_calls
-			self._store_follows(follows)
+		if user:
+			if not self._follows_count_within_range(.1):
+				# Grab and store the list of user follows.
+				follows, remaining_calls = self._get_user_follows()
+				print remaining_calls
+				self._store_follows(follows)
+			else:
+				print 'Enough of the users following already exits in db.'
+				pass
 		else:
-			print 'Enough of the users following already exits in db.'
-			pass
+			print 'not stroring follows: user not in db'
 
 	def _get_user_follows(self):
 		""" Given an instagram_id, this will return a tuple containing 
