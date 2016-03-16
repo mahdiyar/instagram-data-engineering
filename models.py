@@ -73,8 +73,8 @@ def user_exists(instagram_id):
 ################################################################
 
 class AddUserProfile():
-	'''This class takes a instagram_id and grabs a user's profile information
-	   stores it in the database.'''
+	''' This class takes a instagram_id and grabs a user's profile information
+		and their media and stores it in the database.'''
 
 	def __init__(self,instagram_id,user_order):
 		self._instagram_id = instagram_id
@@ -184,25 +184,28 @@ class AddUserProfile():
 
 
 class AddUserFollowers():
-	'''This class takes an instagram_id and grabs the users follower data,
+	''' This class takes an instagram_id and grabs the users follower data
 		and stores this information in the database.'''
 
 	def __init__(self,instagram_id,max_followers=10000):
 		self._instagram_id = instagram_id
 		self._max_followers = float(max_followers)
 
+		# Check to see if the user exists in the database.
 		user = user_exists(self._instagram_id)
 		if user:
+			# Checks how many followers this user already has in database.  
 			if not self._follower_count_within_range(.1):
-				# Grab and store a user's list of followers.
+				print 'Followers: storing user followers in database.'
+				# Grab and store the user's list of followers.
 				followers, remaining_calls = self._get_user_followers()
 				print remaining_calls
 				self._store_followers(followers)
 			else:
-				print 'Followers: Count of followers is within bound.'
+				print 'Followers: count of followers is within bound.'
 				pass
 		else: 
-			print 'not stroring followers: user not in db'
+			print 'Followers: user not in database.'
 
 	def _get_user_followers(self):
 		''' Given an instagram_id this will return a tuple containing
@@ -214,8 +217,10 @@ class AddUserFollowers():
 			user_follower_list = []
 			followers, next = api.user_followed_by(user_id=self._instagram_id)
 			remaining_calls = int(api.x_ratelimit_remaining)
+			# Build the list of all follower ids.
 			for follower in followers:
 				user_follower_list.append(follower.id)
+			# Handling the pagination of the returned object. 
 			while next:
 				followers, next = api.user_followed_by(with_next_url=next)
 				remaining_calls = int(api.x_ratelimit_remaining)
@@ -262,12 +267,13 @@ class AddUserFollows():
 	def __init__(self,instagram_id):
 		self._instagram_id = instagram_id
 
-		# Check if there are already enough of the users following
-		# in the database.
+		# Check to see if the user exists in the database.
 		user = user_exists(self._instagram_id)
 		if user:
+			# Checks amount of following already in the database.
 			if not self._follows_count_within_range(.1):
 				# Grab and store the list of user follows.
+				print 'Followers: storing user followers in database.'
 				follows, remaining_calls = self._get_user_follows()
 				print remaining_calls
 				self._store_follows(follows)
@@ -333,7 +339,7 @@ class AddUserFollows():
 ########## Classes that pull various orders of data  ###########
 ################################################################
 
-class CandidateDataPull():
+class FollowedDataPull():
 	""" This is a class that pulls the data necessary to analyze the canddates
 		(these are the users that followers follow). This is a third order
 		data pull. Pass in a instagram id and it will pull and store the
@@ -359,42 +365,56 @@ class TargetDataPull():
 		# Checking whether the user already exists in the database.
 		user = user_exists(self._instagram_id)
 		if user:
+			# Check if user has already been pulled at lower order.
 			if user.user_order <= 2:
-				print 'order 1 or 2 user already exists'
+				print 'Target Pull: user already exists at lower order.'
 				pass
 			else:
-				print 'in order 3 full pull'
-				self._partial_3_2_pull()
+				print 'Target Pull: order 3 user exists, preform order2 pull.'
 				self._update_order_to_2()
+				self._partial_3_2_pull()
+				
 		else:
-			print 'new user-- full 2 pull'
+			print 'Target Pull: user does not exists, preform order2 pull.'
 			self._full_2_pull()
 
 	def _full_2_pull(self):
+		""" Pull user profile. Pull all following and preform order 3
+			pull on each."""
+
 		AddUserProfile(self._instagram_id,self._user_order)
 		AddUserFollows(self._instagram_id)
-
+		# Pull data on all users self follows.
 		follows = self._get_list_follows()
 		for follow_id in follows:
-			CandidateDataPull(follow_id)
+			FollowedDataPull(follow_id)
 	
 	def _partial_3_2_pull(self):
-		AddUserFollows(self._instagram_id)
+		""" Pull all following and preform order 3 pull on each."""
 
+		AddUserFollows(self._instagram_id)
+		# Pull data on all users self follows.
 		follows = self._get_list_follows()
 		for follow_id in follows:
-			CandidateDataPull(follow_id)
+			FollowedDataPull(follow_id)
 
 	def _get_list_follows(self):
-		q = session.query(Follower).filter_by(follower_id=self._instagram_id)
-		follows = [relationship.instagram_id for relationship in q]
+		""" Get list of user's following."""
+		
+		follows_query = session.query(Follower)\
+				   			   .filter_by(follower_id=self._instagram_id)
+		follows = [relation.instagram_id for relation in follows_query]
 		return follows
 
 	def _update_order_to_2(self):
+		""" Update the users order to 2 and update their pull pull_completion
+			to false."""
+
 		instagram_user = session.query(InstagramUser)\
 							    .filter_by(instagram_id=self._instagram_id)\
 							    .one()
 		instagram_user.user_order = 2
+		instagram_user = False
 		commit_to_db(instagram_user)
 
 class InfluencerDataPull():
@@ -409,30 +429,32 @@ class InfluencerDataPull():
 
 		# Checking whether the user already exists in the database.
 		user = user_exists(self._instagram_id)
-
 		if user:
+			# Different pull levels for different existing user orders. 
 			if user.user_order == 2:
-				print 'in order 2 partial pull'
+				print 'Influnecer Pull: order 2 user exists. Partial 1 pull.'
+				self._update_order_to_1()
 				self._partial_2_1_pull()
-				self._update_order_to_1()
 			elif user.user_order == 3:
-				print 'in order 3 full pull'
-				self._partial_3_1_pull()
+				print 'Influnecer Pull: order 3 user exists. Partial 1 pull.'
 				self._update_order_to_1()
+				self._partial_3_1_pull()
 			else:
-				assert user.user_order == 1
 				if not user.pull_completion:
 					self._full_1_pull()
 				else:
-					print 'already have user at order 1, no pull'
+					print 'Influnecer Pull: user exists at lower order.'
 					pass
 		else:
-			print 'in new user-- full pull'
+			print 'Influnecer Pull: user doesnt exist. preform order1 pull.'
 			self._full_1_pull()
 			
 
 	def _full_1_pull(self):
-		## full pul of all the data
+		""" Pull profile, media, following and followers. Preform order 2 
+			pull on each follower. Preform order 3 pull on users followed
+			by followers."""
+
 		AddUserProfile(self._instagram_id,self._user_order)
 		AddUserFollowers(self._instagram_id)
 		AddUserFollows(self._instagram_id)
@@ -443,9 +465,12 @@ class InfluencerDataPull():
 
 		follows = self._get_list_follows()
 		for follow_id in follows:
-			CandidateDataPull(follow_id)
+			FollowedDataPull(follow_id)
 
 	def _partial_3_1_pull(self):
+		""" Pull following and followers. Preform order 2 pull on each
+			follower. Preform order 3 pull on users followed by followers."""
+
 		AddUserFollowers(self._instagram_id)
 		AddUserFollows(self._instagram_id)
 
@@ -455,10 +480,12 @@ class InfluencerDataPull():
 
 		follows = self._get_list_follows()
 		for follow_id in follows:
-			CandidateDataPull(follow_id)
+			FollowedDataPull(follow_id)
 
 	def _partial_2_1_pull(self):
-		## partial pull because already have follows
+		""" Pull user followers. Preform order 2 pull on each follower.
+			Preform order 3 pull on users followed by followers."""
+
 		AddUserFollowers(self._instagram_id)
 
 		followers = self._get_list_followers()
@@ -466,21 +493,30 @@ class InfluencerDataPull():
 			TargetDataPull(follower_id)
 
 	def _get_list_followers(self):
-		q = session.query(Follower).filter_by(instagram_id=self._instagram_id)
-		followers = [relationship.follower_id for relationship in q]
+		""" Get list of user's followers."""
+
+		followers_query = session.query(Follower)\
+								 .filter_by(instagram_id=self._instagram_id)
+		followers = [relation.follower_id for relation in followers_query]
 		return followers
 
 	def _get_list_follows(self):
-		q = session.query(Follower).filter_by(follower_id=self._instagram_id)
-		follows = [relationship.instagram_id for relationship in q]
+		""" Get list of user's following."""
+
+		follows_query = session.query(Follower)\
+							   .filter_by(follower_id=self._instagram_id)
+		follows = [relation.instagram_id for relation in follows_query]
 		return follows
 
 	def _update_order_to_1(self):
-		## updates the user order
+		""" Update the users order to 1 and update their pull pull_completion
+			to false."""
+
 		instagram_user = session.query(InstagramUser)\
 							    .filter_by(instagram_id=self._instagram_id)\
 							    .one()
 		instagram_user.user_order = 1
+		instagram_user.pull_completion = False
 		commit_to_db(instagram_user)
 
 
