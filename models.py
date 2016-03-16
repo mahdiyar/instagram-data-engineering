@@ -68,13 +68,13 @@ def user_exists(instagram_id):
 	else:
 		return None
 
-def update_pull_completion(instagram_id):
+def update_pull_completion(instagram_id, is_complete=False):
 	""" Update a user's pull completion to True."""
 	user = session.query(InstagramUser)\
 				   .filter_by(instagram_id=instagram_id)\
 				   .one()
-	user.pull_completion = True
-	print 'Updated to pull complete to true.'
+	user.pull_completion = is_complete
+	print 'Updated to pull complete to %s.' %is_complete
 	commit_to_db(user)
 
 
@@ -380,6 +380,7 @@ class TargetDataPull():
 			if user.user_order == 3:
 				print 'Target Pull: order 3 user exists, preform order2 pull.'
 				self._update_order_to_2()
+				update_pull_completion(self._instagram_id,False)
 				self._partial_3_2_pull()
 			elif user.user_order == 2:
 				if not user.pull_completion:
@@ -410,6 +411,9 @@ class TargetDataPull():
 		follows = self._get_list_follows()
 		for follow_id in follows:
 			FollowedDataPull(follow_id)
+
+		# Update the users pull completion status.
+		update_pull_completion(self._instagram_id,True)
 	
 	def _partial_3_2_pull(self):
 		""" Pull all following and preform order 3 pull on each."""
@@ -419,6 +423,9 @@ class TargetDataPull():
 		follows = self._get_list_follows()
 		for follow_id in follows:
 			FollowedDataPull(follow_id)
+
+		# Update the users pull completion status.
+		update_pull_completion(self._instagram_id,True)
 
 	def _get_list_follows(self):
 		""" Get list of user's following."""
@@ -436,7 +443,6 @@ class TargetDataPull():
 							    .filter_by(instagram_id=self._instagram_id)\
 							    .one()
 		instagram_user.user_order = 2
-		instagram_user = False
 		commit_to_db(instagram_user)
 
 class InfluencerDataPull():
@@ -456,10 +462,12 @@ class InfluencerDataPull():
 			if user.user_order == 2:
 				print 'Influnecer Pull: order 2 user exists. Partial 1 pull.'
 				self._update_order_to_1()
+				update_pull_completion(self._instagram_id,False)
 				self._partial_2_1_pull()
 			elif user.user_order == 3:
 				print 'Influnecer Pull: order 3 user exists. Partial 1 pull.'
 				self._update_order_to_1()
+				update_pull_completion(self._instagram_id,False)
 				self._partial_3_1_pull()
 			else:
 				if not user.pull_completion:
@@ -490,6 +498,9 @@ class InfluencerDataPull():
 		for follow_id in follows:
 			FollowedDataPull(follow_id)
 
+		# Update the users pull completion status.
+		update_pull_completion(self._instagram_id,True)
+
 	def _partial_3_1_pull(self):
 		""" Pull following and followers. Preform order 2 pull on each
 			follower. Preform order 3 pull on users followed by followers."""
@@ -505,6 +516,9 @@ class InfluencerDataPull():
 		for follow_id in follows:
 			FollowedDataPull(follow_id)
 
+		# Update the users pull completion status.
+		update_pull_completion(self._instagram_id,True)
+
 	def _partial_2_1_pull(self):
 		""" Pull user followers. Preform order 2 pull on each follower.
 			Preform order 3 pull on users followed by followers."""
@@ -514,6 +528,9 @@ class InfluencerDataPull():
 		followers = self._get_list_followers()
 		for follower_id in followers:
 			TargetDataPull(follower_id)
+
+		# Update the users pull completion status.
+		update_pull_completion(self._instagram_id,True)
 
 	def _get_list_followers(self):
 		""" Get list of user's followers."""
@@ -539,7 +556,6 @@ class InfluencerDataPull():
 							    .filter_by(instagram_id=self._instagram_id)\
 							    .one()
 		instagram_user.user_order = 1
-		instagram_user.pull_completion = False
 		commit_to_db(instagram_user)
 
 
