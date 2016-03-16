@@ -277,10 +277,17 @@ class AddUserFollows():
 	def __init__(self,instagram_id):
 		self._instagram_id = instagram_id
 
-		# Grab and store the list of user follows.
-		follows, remaining_calls = self._get_user_follows()
-		print remaining_calls
-		self._store_follows(follows)
+		# Check if there are already enough of the users following
+		# in the database.
+		user = user_exists(self._instagram_id)
+		if not self._follows_count_within_range(.1):
+			# Grab and store the list of user follows.
+			follows, remaining_calls = self._get_user_follows()
+			print remaining_calls
+			self._store_follows(follows)
+		else:
+			print 'Enough of the users following already exits in db.'
+			pass
 
 	def _get_user_follows(self):
 		""" Given an instagram_id, this will return a tuple containing 
@@ -316,6 +323,22 @@ class AddUserFollows():
 				new_relationship = Follower(instagram_id=instagram_id,
 											follower_id=self._instagram_id)
 				commit_to_db(new_relationship)
+
+	def _follows_count_within_range(self,prec_range):
+		""" This function checks the database to see if the number of follows
+			in the Follower table is within a range of the current number in 
+			the user's profile."""
+
+		follows = session.query(Follower)\
+						   .filter_by(follower_id=self._instagram_id)
+		db_count = follows.count()
+		user = session.query(InstagramUser)\
+					  .filter_by(instagram_id=self._instagram_id)\
+					  .one()
+		prof_count = user.num_following
+		bound = prof_count*prec_range
+
+		return prof_count-bound <= db_count <= prof_count+bound
 
 
 class CandidateDataPull():
