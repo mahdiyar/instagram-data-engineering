@@ -377,7 +377,8 @@ class BasicDataPull():
 		try:
 			AddUserProfile(self._instagram_id,self._user_order)
 			# Update the users pull completion status.
-			update_pull_completion(self._instagram_id,order=3,True)
+			update_pull_completion(self._instagram_id,order=3,
+													  is_complete=True)
 		except InstagramAPIError:
 			print 'Private: this user is private.'
 			pass
@@ -400,7 +401,8 @@ class TargetDataPull():
 			if user.user_order == 3:
 				print 'Target Pull: order 3 user exists, preform order2 pull.'
 				self._update_order_to_2()
-				update_pull_completion(self._instagram_id,order=2,False)
+				update_pull_completion(self._instagram_id,order=2,
+														  is_complete=False)
 				self._partial_3_2_pull()
 			elif user.user_order == 2:
 				if not user.pull_completion:
@@ -433,7 +435,8 @@ class TargetDataPull():
 			for follow_id in follows:
 				BasicDataPull(follow_id)
 			# Update the users pull completion status.
-			update_pull_completion(self._instagram_id,order=2,True)
+			update_pull_completion(self._instagram_id,order=2,
+													  is_complete=True)
 		except InstagramAPIError:
 			print 'Private: this user is private.'
 			pass
@@ -449,7 +452,8 @@ class TargetDataPull():
 				BasicDataPull(follow_id)
 
 			# Update the users pull completion status.
-			update_pull_completion(self._instagram_id,order=2,True)
+			update_pull_completion(self._instagram_id,order=2,
+													  is_complete=True)
 		except InstagramAPIError:
 			print 'Private: this user is private.'
 			pass
@@ -489,12 +493,14 @@ class InfluencerDataPull():
 			if user.user_order == 2:
 				print 'Influnecer Pull: order 2 user exists. Partial 1 pull.'
 				self._update_order_to_1()
-				update_pull_completion(self._instagram_id,order=1,False)
+				update_pull_completion(self._instagram_id,order=1,
+														  is_complete=False)
 				self._partial_2_1_pull()
 			elif user.user_order == 3:
 				print 'Influnecer Pull: order 3 user exists. Partial 1 pull.'
 				self._update_order_to_1()
-				update_pull_completion(self._instagram_id,order=1,False)
+				update_pull_completion(self._instagram_id,order=1,
+														  is_complete=False)
 				self._partial_3_1_pull()
 			else:
 				if not user.pull_completion:
@@ -527,7 +533,8 @@ class InfluencerDataPull():
 				BasicDataPull(follow_id)
 			print 'UPDATEINGTRUE'
 			# Update the users pull completion status.
-			update_pull_completion(self._instagram_id,order=1,True)
+			update_pull_completion(self._instagram_id,order=1,
+													  is_complete=True)
 		except InstagramAPIError:
 			print 'Private: this user is private.'
 			pass
@@ -548,7 +555,8 @@ class InfluencerDataPull():
 			for follow_id in follows:
 				BasicDataPull(follow_id)
 			# Update the users pull completion status.
-			update_pull_completion(self._instagram_id,order=1,True)
+			update_pull_completion(self._instagram_id,order=1,
+													  is_complete=True)
 		except InstagramAPIError:
 			print 'Private: this user is private.'
 			pass
@@ -564,7 +572,8 @@ class InfluencerDataPull():
 			for follower_id in followers:
 				TargetDataPull(follower_id)
 			# Update the users pull completion status.
-			update_pull_completion(self._instagram_id,order=1,True)
+			update_pull_completion(self._instagram_id,order=1,
+													  is_complete=True)
 		except InstagramAPIError:
 			print 'Private: this user is private.'
 			pass
