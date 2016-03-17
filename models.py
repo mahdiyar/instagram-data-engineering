@@ -68,14 +68,22 @@ def user_exists(instagram_id):
 	else:
 		return None
 
-def update_pull_completion(instagram_id, is_complete=False):
+def update_pull_completion(instagram_id,order,is_complete=False):
 	""" Update a user's pull completion to True."""
 	user = session.query(InstagramUser)\
 				   .filter_by(instagram_id=instagram_id)\
 				   .one()
-	user.pull_completion = is_complete
-	print 'Updated to pull complete to %s.' %is_complete
-	commit_to_db(user)
+	# Check if the order of the current pull is strictly less than the
+	# user order stored already in the database. i.e., jstnstwrt is in
+	# the following of followers of jstnstwrt, so you will try to pull
+	# the user at order 3 when pulling at the user at order 1
+	if order <= user.user_order:
+		user.pull_completion = is_complete
+		print 'Updated to pull complete to %s.' %is_complete
+		commit_to_db(user)
+	else:
+		print 'Pull complete at higher order.'
+		pass
 
 
 
@@ -369,7 +377,7 @@ class BasicDataPull():
 		try:
 			AddUserProfile(self._instagram_id,self._user_order)
 			# Update the users pull completion status.
-			update_pull_completion(self._instagram_id,True)
+			update_pull_completion(self._instagram_id,order=3,True)
 		except InstagramAPIError:
 			print 'Private: this user is private.'
 			pass
@@ -392,7 +400,7 @@ class TargetDataPull():
 			if user.user_order == 3:
 				print 'Target Pull: order 3 user exists, preform order2 pull.'
 				self._update_order_to_2()
-				update_pull_completion(self._instagram_id,False)
+				update_pull_completion(self._instagram_id,order=2,False)
 				self._partial_3_2_pull()
 			elif user.user_order == 2:
 				if not user.pull_completion:
@@ -425,7 +433,7 @@ class TargetDataPull():
 			for follow_id in follows:
 				BasicDataPull(follow_id)
 			# Update the users pull completion status.
-			update_pull_completion(self._instagram_id,True)
+			update_pull_completion(self._instagram_id,order=2,True)
 		except InstagramAPIError:
 			print 'Private: this user is private.'
 			pass
@@ -441,7 +449,7 @@ class TargetDataPull():
 				BasicDataPull(follow_id)
 
 			# Update the users pull completion status.
-			update_pull_completion(self._instagram_id,True)
+			update_pull_completion(self._instagram_id,order=2,True)
 		except InstagramAPIError:
 			print 'Private: this user is private.'
 			pass
@@ -481,12 +489,12 @@ class InfluencerDataPull():
 			if user.user_order == 2:
 				print 'Influnecer Pull: order 2 user exists. Partial 1 pull.'
 				self._update_order_to_1()
-				update_pull_completion(self._instagram_id,False)
+				update_pull_completion(self._instagram_id,order=1,False)
 				self._partial_2_1_pull()
 			elif user.user_order == 3:
 				print 'Influnecer Pull: order 3 user exists. Partial 1 pull.'
 				self._update_order_to_1()
-				update_pull_completion(self._instagram_id,False)
+				update_pull_completion(self._instagram_id,order=1,False)
 				self._partial_3_1_pull()
 			else:
 				if not user.pull_completion:
@@ -509,7 +517,6 @@ class InfluencerDataPull():
 			AddUserProfile(self._instagram_id,self._user_order)
 			AddUserFollowers(self._instagram_id)
 			AddUserFollows(self._instagram_id)
-			print 
 
 			followers = self._get_list_followers()
 			for follower_id in followers:
@@ -520,7 +527,7 @@ class InfluencerDataPull():
 				BasicDataPull(follow_id)
 			print 'UPDATEINGTRUE'
 			# Update the users pull completion status.
-			update_pull_completion(self._instagram_id,True)
+			update_pull_completion(self._instagram_id,order=1,True)
 		except InstagramAPIError:
 			print 'Private: this user is private.'
 			pass
@@ -532,14 +539,16 @@ class InfluencerDataPull():
 		try:
 			AddUserFollowers(self._instagram_id)
 			AddUserFollows(self._instagram_id)
+			
 			followers = self._get_list_followers()
 			for follower_id in followers:
 				TargetDataPull(follower_id)
+			
 			follows = self._get_list_follows()
 			for follow_id in follows:
 				BasicDataPull(follow_id)
 			# Update the users pull completion status.
-			update_pull_completion(self._instagram_id,True)
+			update_pull_completion(self._instagram_id,order=1,True)
 		except InstagramAPIError:
 			print 'Private: this user is private.'
 			pass
@@ -550,11 +559,12 @@ class InfluencerDataPull():
 
 		try:
 			AddUserFollowers(self._instagram_id)
+			
 			followers = self._get_list_followers()
 			for follower_id in followers:
 				TargetDataPull(follower_id)
 			# Update the users pull completion status.
-			update_pull_completion(self._instagram_id,True)
+			update_pull_completion(self._instagram_id,order=1,True)
 		except InstagramAPIError:
 			print 'Private: this user is private.'
 			pass
