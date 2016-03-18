@@ -82,7 +82,7 @@ def update_pull_completion(instagram_id,order,is_complete=False):
 		print 'Updated to pull complete to %s.' %is_complete
 		commit_to_db(user)
 	else:
-		print 'Pull complete at higher order.'
+		print 'Pull is not complete!'
 		pass
 
 
@@ -430,11 +430,7 @@ class TargetDataPull():
 		try:
 			AddUserProfile(self._instagram_id,self._user_order)
 			AddUserFollows(self._instagram_id)
-			# Pull data on all users self follows.
-			follows = self._get_list_follows()
-			for follow_id in follows:
-				BasicDataPull(follow_id)
-			# Update the users pull completion status.
+			#Update the users pull completion status.
 			update_pull_completion(self._instagram_id,order=2,
 													  is_complete=True)
 		except InstagramAPIError:
@@ -446,11 +442,6 @@ class TargetDataPull():
 
 		try:
 			AddUserFollows(self._instagram_id)
-			# Pull data on all users self follows.
-			follows = self._get_list_follows()
-			for follow_id in follows:
-				BasicDataPull(follow_id)
-
 			# Update the users pull completion status.
 			update_pull_completion(self._instagram_id,order=2,
 													  is_complete=True)
@@ -528,10 +519,6 @@ class InfluencerDataPull():
 			for follower_id in followers:
 				TargetDataPull(follower_id)
 
-			follows = self._get_list_follows()
-			for follow_id in follows:
-				BasicDataPull(follow_id)
-			print 'UPDATEINGTRUE'
 			# Update the users pull completion status.
 			update_pull_completion(self._instagram_id,order=1,
 													  is_complete=True)
@@ -550,10 +537,7 @@ class InfluencerDataPull():
 			followers = self._get_list_followers()
 			for follower_id in followers:
 				TargetDataPull(follower_id)
-			
-			follows = self._get_list_follows()
-			for follow_id in follows:
-				BasicDataPull(follow_id)
+
 			# Update the users pull completion status.
 			update_pull_completion(self._instagram_id,order=1,
 													  is_complete=True)
@@ -571,6 +555,7 @@ class InfluencerDataPull():
 			followers = self._get_list_followers()
 			for follower_id in followers:
 				TargetDataPull(follower_id)
+				
 			# Update the users pull completion status.
 			update_pull_completion(self._instagram_id,order=1,
 													  is_complete=True)
