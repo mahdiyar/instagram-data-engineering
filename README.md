@@ -1,4 +1,4 @@
-# instagram-follower-clusters
+# instagram-data-engineering
 
 This project is an investigation into understanding your following on instagram. 
 
